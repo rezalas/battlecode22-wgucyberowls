@@ -1,4 +1,4 @@
-package WGUBattleOwls;
+package WGUCyberOwls;
 
 import battlecode.common.*;
 import java.util.Random;
