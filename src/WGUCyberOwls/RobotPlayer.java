@@ -25,6 +25,17 @@ public strictfp class RobotPlayer {
      */
     static final Random rng = new Random(6147);
 
+
+    /**
+     * Shared Array Index
+     * 0 - Archon count
+     * 1 - Miner count
+     * 2 - Watchtower count
+     * 3 - Soldier count
+     * 4 - Builder count
+     * 5 - Lab count
+     */
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
         Direction.NORTH,
@@ -72,9 +83,9 @@ public strictfp class RobotPlayer {
                     case ARCHON:     runArchon(rc);  break;
                     case MINER:      runMiner(rc);   break;
                     case SOLDIER:    runSoldier(rc); break;
-                    case LABORATORY: // Examplefuncsplayer doesn't use any of these robot types below.
-                    case WATCHTOWER: // You might want to give them a try!
-                    case BUILDER:
+                    case WATCHTOWER:  
+                    case BUILDER:     
+                    case LABORATORY: // stretch goal!
                     case SAGE:       break;
                 }
             } catch (GameActionException e) {
@@ -106,13 +117,21 @@ public strictfp class RobotPlayer {
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
     static void runArchon(RobotController rc) throws GameActionException {
+        
+        // Production Costs
+        // Archon	Laboratory	Watchtower
+        // 250 Au (nominal)	800 Pb	180 Pb
+        // Miner	Builder	Soldier	Sage
+        // 50 Pb	40 Pb	75 Pb	50 Au
         // Pick a direction to build in.
+        int minersBuilt = 0;
         Direction dir = directions[rng.nextInt(directions.length)];
         if (rng.nextBoolean()) {
             // Let's try to build a miner.
             rc.setIndicatorString("Trying to build a miner");
             if (rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.buildRobot(RobotType.MINER, dir);
+                minersBuilt++;
             }
         } else {
             // Let's try to build a soldier.
@@ -121,6 +140,8 @@ public strictfp class RobotPlayer {
                 rc.buildRobot(RobotType.SOLDIER, dir);
             }
         }
+        if(minersBuilt > 0)
+            rc.writeSharedArray(1, rc.readSharedArray(1) + minersBuilt);
     }
 
     /**
@@ -132,8 +153,8 @@ public strictfp class RobotPlayer {
         MapLocation me = rc.getLocation();
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
-                MapLocation mineLocation = new MapLocation(me.x + dx, me.y + dy);
                 // Notice that the Miner's action cooldown is very low.
+                MapLocation mineLocation = new MapLocation(me.x + dx, me.y + dy);
                 // You can mine multiple times per turn!
                 while (rc.canMineGold(mineLocation)) {
                     rc.mineGold(mineLocation);
@@ -146,6 +167,7 @@ public strictfp class RobotPlayer {
 
         // Also try to move randomly.
         Direction dir = directions[rng.nextInt(directions.length)];
+        
         if (rc.canMove(dir)) {
             rc.move(dir);
             System.out.println("I moved!");
