@@ -4,6 +4,7 @@ import battlecode.common.*;
 
 import static org.junit.Assert.fail;
 
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -84,7 +85,7 @@ public strictfp class RobotPlayer {
                 // use different strategies on different robots. If you wish, you are free to rewrite
                 // this into a different control structure!
                 switch (rc.getType()) {
-                    case ARCHON:     runArchon(rc);  break;
+                    case ARCHON:     ArchonStrategy.runArchon(rc);  break;
                     case MINER:      runMiner(rc);   break;
                     case SOLDIER:    runSoldier(rc); break;
                     case WATCHTOWER:  runWatchtower(rc); break;
@@ -185,11 +186,18 @@ public strictfp class RobotPlayer {
         return 0;
     }
 
+strictfp class MinerStrategy {
+    static Direction exploreDir = null; 
     /**
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
     static void runMiner(RobotController rc) throws GameActionException {
+        if(exploreDir == null){
+            RobotPlayer.rng.setSeed(rc.getID{});
+            exploreDir = RobotPlayer.directions[RobotPlayer.rng.nextInt(RobotPlayer.directions.length)];
+        }
+        rc.setIndicatorString(exploreDir.toString());
         // Try to mine on squares around us.
         MapLocation me = rc.getLocation();
         for (int dx = -1; dx <= 1; dx++) {
@@ -200,9 +208,41 @@ public strictfp class RobotPlayer {
                 while (rc.canMineGold(mineLocation)) {
                     rc.mineGold(mineLocation);
                 }
-                while (rc.canMineLead(mineLocation)) {
+                while (rc.canMineLead(mineLocation) || rc.senseLead(mineLocation) > 1) {
                     rc.mineLead(mineLocation);
                 }
+            }
+        }
+        int visionRadius = rc.getType().visionRadiusSquared;
+        MapLocation[] nearbyLocations = rc.getAllLocationsWithinRadiusSquared(me, visionRadius);
+
+        MapLocation targetLocation = null;
+        int distanceToTarget = Integer.MAX_VALUE;
+
+        //for each nearby location
+        for (MapLocation tryLocation : nearbyLocations) {
+            // is there any resource there?
+            if (rc.senseLead(tryLocation) > 1 || rc.senseGold(tryLocation) > 0) {
+                //yes! we should consider going here.
+                int distanceTo = me.distanceSquaredTo(tryLocation);
+                if (distanceTo < distanceToTarget) {
+                    targetLocation = tryLocation;
+                    distanceToTarget = distanceTo;
+                }
+            }
+        }
+        //we have a target location! let's move towards it.
+        if (targetLocation != null) {
+            //don't use mapLocation.directionTo(targetLocation)
+            Direction toMove = me.directionTo(targetLocation);
+            if (rc.canMove(toMove)) {
+                rc.move(toMove);
+            }
+        } else {
+            if(rc.canMove(exploreDir)){
+                rc.move(exploreDir);
+            } else if (!rc.onTheMap(rc.getLocation().add(exploreDir))){
+                exploreDir = exploreDir.opposite();
             }
         }
 
@@ -214,7 +254,12 @@ public strictfp class RobotPlayer {
             System.out.println("I moved!");
         }
     }
-
+}
+    static void runBuilder(RobotController rc) throws GameActionException {
+        //needs to build watchtowers and repair buildings
+        //
+        
+    }
     /**
      * Run a single turn for a Soldier.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
