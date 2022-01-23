@@ -4,6 +4,7 @@ import battlecode.common.*;
 
 import static org.junit.Assert.fail;
 
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -84,11 +85,11 @@ public strictfp class RobotPlayer {
                 // use different strategies on different robots. If you wish, you are free to rewrite
                 // this into a different control structure!
                 switch (rc.getType()) {
-                    case ARCHON:     runArchon(rc);  break;
-                    case MINER:      runMiner(rc);   break;
+                    case ARCHON:     ArchonStrategy.runArchon(rc);  break;
+                    case MINER:      MinerStrategy.runMiner(rc);   break;
                     case SOLDIER:    runSoldier(rc); break;
                     case WATCHTOWER:  runWatchtower(rc); break;
-                    case BUILDER:     
+                    case BUILDER:     BuildStrategy.runBuilder(rc); break;
                     case LABORATORY: // stretch goal!
                     case SAGE:       break;
                 }
@@ -183,36 +184,6 @@ public strictfp class RobotPlayer {
             return 1;
         }
         return 0;
-    }
-
-    /**
-     * Run a single turn for a Miner.
-     * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
-     */
-    static void runMiner(RobotController rc) throws GameActionException {
-        // Try to mine on squares around us.
-        MapLocation me = rc.getLocation();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                // Notice that the Miner's action cooldown is very low.
-                MapLocation mineLocation = new MapLocation(me.x + dx, me.y + dy);
-                // You can mine multiple times per turn!
-                while (rc.canMineGold(mineLocation)) {
-                    rc.mineGold(mineLocation);
-                }
-                while (rc.canMineLead(mineLocation)) {
-                    rc.mineLead(mineLocation);
-                }
-            }
-        }
-
-        // Also try to move randomly.
-        Direction dir = directions[rng.nextInt(directions.length)];
-        
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            System.out.println("I moved!");
-        }
     }
 
     /**
